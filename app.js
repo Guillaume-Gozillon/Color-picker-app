@@ -3,6 +3,12 @@ const colorDivs = document.querySelectorAll('.color')
 const generateBtn = document.querySelector('.generate')
 const sliders = document.querySelectorAll('input[type="range"]')
 const currentHexes = document.querySelectorAll('.color h2')
+const popup = document.querySelector('.copy-container')
+const adjustButton = document.querySelectorAll('.adjust')
+const closeAdjustments = document.querySelectorAll('.close-adjustement')
+const sliderContainer = document.querySelectorAll('.sliders')
+const lockButton = document.querySelectorAll('.lock')
+
 let initialColor
 
 // Functions
@@ -19,7 +25,12 @@ const randomColors = () => {
         const hexText = div.children[0]
         const randomColor = generateHex()
 
-        initialColor.push(chroma(randomColor).hex())
+        if (div.classList.contains('locked')) {
+            initialColor.push(hexText.innerText)
+            return
+        } else {
+            initialColor.push(chroma(randomColor).hex())
+        }
 
         // Add color to the bckgrnd
         div.style.backgroundColor = randomColor
@@ -38,6 +49,13 @@ const randomColors = () => {
     })
     // Reset Input
     resetInput()
+
+    // Check for button contrast
+    adjustButton.forEach((button, index) => {
+        checkTextContrast(initialColor[index], button)
+        checkTextContrast(initialColor[index], lockButton[index])
+    })
+    
 }
 
 const checkTextContrast = (color, text) => {
@@ -98,7 +116,10 @@ const hslControls = e => {
         .set('hsl.l', brightness.value)
         .set('hsl.h', hue.value)
 
-        colorDivs[index].style.backgroundColor = color
+    colorDivs[index].style.backgroundColor = color
+
+    // Colorize sliders
+    colorizeSliders(color, hue, brightness, saturation)
 }
 
 const updateTextUI = index => {
@@ -141,6 +162,41 @@ const resetInput = () => {
     })
 }
 
+const copyToClipboard = hex => {
+    const el = document.createElement('textarea')
+    el.value = hex.innerText
+    document.body.appendChild(el)
+
+    el.select()
+    document.execCommand('copy')
+    document.body.removeChild(el)
+
+    // Popup animation
+    const popupBox = popup.children[0]
+    popup.classList.add('active')
+    popupBox.classList.add('active')
+}
+
+const openAdjustmentPanel = index => {
+    sliderContainer[index].classList.toggle('active')
+}
+
+const closeAdjustmentPanel = index => {
+    sliderContainer[index].classList.remove('active')
+}
+
+const lockFeatures = (e, index) => {
+    colorDivs[index].classList.toggle('locked')
+    if (colorDivs[index].classList.contains('locked')) {
+        e.target.innerHTML = `<i class="fas fa-lock"></i>`
+    }
+    else {
+        e.target.innerHTML = `<i class="fas fa-lock-open"></i>`
+    }
+}
+
+// Event Listeners
+
 sliders.forEach(slider => {
     slider.addEventListener('input', hslControls)
 })
@@ -150,6 +206,38 @@ colorDivs.forEach((div, index) => {
         updateTextUI(index)
     })
 })
+
+currentHexes.forEach(hex => {
+    hex.addEventListener('click', () => {
+        copyToClipboard(hex)
+    })
+})
+
+popup.addEventListener('transitionend', () => {
+    const popupBox = popup.children[0]
+    popup.classList.remove('active')
+    popupBox.classList.remove('active')
+})
+
+adjustButton.forEach((button, index) => {
+    button.addEventListener('click', () => {
+        openAdjustmentPanel(index)
+    })
+})
+
+closeAdjustments.forEach((button, index) => {
+    button.addEventListener('click', () => {
+        closeAdjustmentPanel(index)
+    })
+})
+
+lockButton.forEach((button, index) => {
+    button.addEventListener('click', e => {
+        lockFeatures(e, index)
+    })
+})
+
+generateBtn.addEventListener('click', randomColors)
 
 randomColors()
 
